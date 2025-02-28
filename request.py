@@ -14,36 +14,30 @@ with open('tokens.json', 'r') as f:
 
 service = Service(GeckoDriverManager().install())
 options = Options()
+options.add_argument('--headless')
 driver = webdriver.Firefox(service=service, options=options)
 
-def selenium_request(url, click_selectors=None, skip_selectors=None, timeout=4000):
+def selenium_request(url, click_selectors=None, timeout=4000):
     driver.get(url)
     driver.implicitly_wait(timeout)
-
-    if skip_selectors:
-        for skip_selector in skip_selectors:
-            try:
-                element = WebDriverWait(driver, timeout).until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, skip_selector))
-                )
-                driver.execute_script("arguments[0].click();", element)
-            except Exception as e:
-                print(f"Could not click skip element with selector {skip_selector}: {e}")
 
     if click_selectors:
         for click_selector in click_selectors:
             try:
-                element = WebDriverWait(driver, timeout).until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, click_selector))
-                )
-                driver.execute_script("arguments[0].click();", element)
-            except ElementClickInterceptedException:
-                print(f"Element with selector {click_selector} was intercepted. Trying to click using JavaScript.")
-                element = driver.find_element(By.CSS_SELECTOR, click_selector)
+                if isinstance(click_selector, tuple):
+                    element = WebDriverWait(driver, timeout).until(
+                        EC.element_to_be_clickable(click_selector)
+                    )
+                else:
+                    element = WebDriverWait(driver, timeout).until(
+                        EC.element_to_be_clickable((By.CSS_SELECTOR, click_selector))
+                    )
+
                 driver.execute_script("arguments[0].click();", element)
             except Exception as e:
                 print(f"Could not click element with selector {click_selector}: {e}")
-            driver.wait(5000)
+
+            driver.implicitly_wait(2)
 
     html = driver.page_source
     return BeautifulSoup(html, 'html.parser')
@@ -59,6 +53,10 @@ if __name__ == '__main__':
     timeout = 5000
     setup_ucstudent_page(url)
 
-    CLICK_SELECTOR_SALA_VIRTUAL = 'button[arial-label="Sala virtual"]'
-    CLICK_SELECTOR_LOCAL = "//button[contains(text(), 'Local')]"
-    selenium_request(url, click_selectors=[CLICK_SELECTOR_SALA_VIRTUAL, CLICK_SELECTOR_LOCAL], timeout=timeout)
+    click_selectors = [
+        'button[aria-label="Sala virtual"]',
+        (By.XPATH, "//button[contains(text(), 'Local')]"),
+        (By.XPATH, "//button[contains(text(), 'Confirmar')]"),
+    ]
+
+    selenium_request(url, click_selectors=click_selectors, timeout=timeout)
