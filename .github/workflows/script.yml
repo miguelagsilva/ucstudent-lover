@@ -1,0 +1,25 @@
+name: Run Script Every 30 Minutes
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Create cookies.json file
+        runs: echo "$COOKIES_JSON" > cookies.json
+        shell: bash
+        env:
+          COOKIES_JSON: ${{ secrets.COOKIES_JSON }}
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run script
+        run: python ucstudent-lover.py
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}

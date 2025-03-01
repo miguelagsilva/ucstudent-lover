@@ -1,4 +1,3 @@
-import requests
 from discord_webhook import DiscordWebhook
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service
@@ -6,7 +5,6 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import ElementClickInterceptedException
 from webdriver_manager.firefox import GeckoDriverManager
 from bs4 import BeautifulSoup
 import json
@@ -43,15 +41,13 @@ def mark_presence(click_selectors=None):
                 )
 
             driver.execute_script("arguments[0].click();", element)
-            if click_selector == click_selectors[-1]:
-                driver.implicitly_wait(10)
-                driver.save_screenshot("screenshot.png")
-                send_discord_message(message='A presence was marked successfully!', file='screenshot.png')
         except Exception as e:
             print(f"Could not click element with selector {click_selector}: {e}")
-            break
+            raise Exception(e)
 
         driver.implicitly_wait(2)
+
+    driver.save_screenshot("screenshot.png")
 
     html = driver.page_source
     return BeautifulSoup(html, 'html.parser')
@@ -73,4 +69,8 @@ if __name__ == '__main__':
         #(By.XPATH, "//button[contains(text(), 'Confirmar')]"),
     ]
 
-    mark_presence(click_selectors=click_selectors)
+    try:
+        mark_presence(click_selectors=click_selectors)
+        send_discord_message(message='A presence was marked sucessfully', file='screenshot.png')
+    except Exception as e:
+        send_discord_message(message=e, file='screenshot.png')
