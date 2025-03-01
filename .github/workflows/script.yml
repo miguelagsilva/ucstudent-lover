@@ -1,18 +1,18 @@
 name: Run Script Every 30 Minutes
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/30 8-21 * * 0-5'
 jobs:
   run-script:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-      - name: Create cookies.json file
-        runs: echo "$COOKIES_JSON" > cookies.json
+      - name: Create tokens.json file
+        runs: echo "$TOKENS_JSON" > tokens.json
         shell: bash
         env:
-          COOKIES_JSON: ${{ secrets.COOKIES_JSON }}
+          TOKENS_JSON: ${{ secrets.TOKENS_JSON }}
       - name: Set up Python
         uses: actions/setup-python@v3
         with:
