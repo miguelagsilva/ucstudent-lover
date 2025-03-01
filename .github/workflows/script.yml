@@ -9,7 +9,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
       - name: Create tokens.json file
-        runs: echo "$TOKENS_JSON" > tokens.json
+        run: echo "$TOKENS_JSON" > tokens.json
         shell: bash
         env:
           TOKENS_JSON: ${{ secrets.TOKENS_JSON }}
