@@ -63,10 +63,9 @@ if __name__ == '__main__':
     setup_ucstudent_page()
 
     click_selectors = [
-        'button[aria-label="Ficheiros"]',
-        #'button[aria-label="Sala virtual"]',
-        #(By.XPATH, "//button[contains(text(), 'Local')]"),
-        #(By.XPATH, "//button[contains(text(), 'Confirmar')]"),
+        'button[aria-label="Sala virtual"]',
+        (By.XPATH, "//button[contains(text(), 'Local')]"),
+        (By.XPATH, "//button[contains(text(), 'Confirmar')]"),
     ]
 
     try:
