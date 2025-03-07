@@ -76,15 +76,16 @@ def mark_presence():
 
         try:
             click_selection(click_selector)
-            send_discord_message(message="✅ Presence was marked successfully.")
         except Exception as e:
             if idx == 1:
                 print("✅ Presence already marked. Skipping...")
                 send_discord_message(message="✅ Presence already marked.")
                 return
             else:
-                print(f"⚠️ Skipping step {idx + 1} due to failure.")
+                print(f"⚠️ Stopping on step {idx + 1} due to failure.")
                 send_discord_message(message=f"⚠️ Presence could not be marked. {str(e)}")
+                return
+    send_discord_message(message="✅ Presence was marked successfully.")
 
 
 if __name__ == "__main__":
