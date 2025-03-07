@@ -92,6 +92,7 @@ if __name__ == "__main__":
 
     mark_presence()
 
+    time.sleep(1)
     driver.save_screenshot("screenshot.png")
     send_discord_message(message="📸 Screenshot of session", file="screenshot.png")
     driver.quit()
