@@ -1,7 +1,7 @@
 name: Run Script Every 30 Minutes
 on:
-  #schedule:
-  #  - cron: '*/30 8-21 * * 1-5'
+  schedule:
+    - cron: '*/30 8-21 * * 1-5'
   workflow_dispatch:
 jobs:
   run-script:

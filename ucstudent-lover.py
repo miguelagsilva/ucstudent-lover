@@ -9,67 +9,89 @@ from webdriver_manager.firefox import GeckoDriverManager
 from bs4 import BeautifulSoup
 import json
 import os
+import time
 
-with open('tokens.json', 'r') as f:
-    session_token = json.load(f)['session.token']
+# Load session token
+with open("tokens.json", "r") as f:
+    session_token = json.load(f).get("session.token", "")
 
+# WebDriver setup
 service = Service(GeckoDriverManager().install())
 options = Options()
-options.add_argument('--headless')
+options.add_argument("--headless")  # Uncomment for headless mode
 driver = webdriver.Firefox(service=service, options=options)
 
-url = 'https://ucstudent.uc.pt'
-timeout = 5000
+# Constants
+URL = "https://ucstudent.uc.pt"
+TIMEOUT = 20
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+
 
 def send_discord_message(message, file=None):
-    webhook = DiscordWebhook(url=os.environ['DISCORD_WEBHOOK_URL'], content=message)
-    if file is not None:
+    """Send a message to Discord webhook with optional screenshot attachment."""
+    if not DISCORD_WEBHOOK_URL:
+        print("⚠️ DISCORD_WEBHOOK_URL not set!")
+        return
+
+    webhook = DiscordWebhook(url=DISCORD_WEBHOOK_URL, content=message)
+    if file and os.path.exists(file):
         with open(file, "rb") as f:
             webhook.add_file(file=f.read(), filename="screenshot.png")
     webhook.execute()
 
-def mark_presence(click_selectors=None):
-    for click_selector in click_selectors:
-        try:
-            if isinstance(click_selector, tuple):
-                element = WebDriverWait(driver, timeout).until(
-                    EC.element_to_be_clickable(click_selector)
-                )
-            else:
-                element = WebDriverWait(driver, timeout).until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, click_selector))
-                )
 
-            driver.execute_script("arguments[0].click();", element)
-        except Exception as e:
-            print(f"Could not click element with selector {click_selector}: {e}")
-            raise Exception(e)
+def click_selection(xpath):
+    """Click an element using XPath safely."""
+    print(f"🔍 Attempting to click: {xpath}")
+    try:
+        element = WebDriverWait(driver, TIMEOUT).until(
+            EC.element_to_be_clickable((By.XPATH, xpath))
+        )
+        driver.execute_script("arguments[0].click();", element)
+        print(f"✅ Clicked: {xpath}")
+    except Exception as e:
+        print(f"❌ Could not click element {xpath}: {e}")
+        raise e
 
-        driver.implicitly_wait(2)
-
-    driver.save_screenshot("screenshot.png")
-
-    html = driver.page_source
-    return BeautifulSoup(html, 'html.parser')
 
 def setup_ucstudent_page():
-    driver.get(url)
+    """Navigate to the page and set session token."""
+    driver.get(URL)
     driver.execute_script(f"window.localStorage.setItem('session.token', '{session_token}');")
     driver.refresh()
-    driver.implicitly_wait(timeout)
+    time.sleep(5)  # Allow JavaScript to load
+    driver.refresh()
 
 
-if __name__ == '__main__':
-    setup_ucstudent_page()
-
+def mark_presence():
+    """Mark presence in the class if not already marked."""
     click_selectors = [
-        'button[aria-label="Sala virtual"]',
-        (By.XPATH, "//button[contains(text(), 'Local')]"),
-        (By.XPATH, "//button[contains(text(), 'Confirmar')]"),
+        "//button[@arial-label='Entrar na sala virtual']",
+        "//button[contains(@class, 'is-dark') and span[contains(text(), 'Local')]]",
+        "//button[span[contains(text(), 'Marcar presença')]]",
     ]
 
-    try:
-        mark_presence(click_selectors=click_selectors)
-        send_discord_message(message='A presence was marked sucessfully', file='screenshot.png')
-    except Exception as e:
-        send_discord_message(message=e, file='screenshot.png')
+    for idx, click_selector in enumerate(click_selectors):
+        print(f"➡️ Processing step {idx + 1}: {click_selector}")
+
+        try:
+            click_selection(click_selector)
+            send_discord_message(message="✅ Presence was marked successfully.")
+        except Exception as e:
+            if idx == 1:
+                print("✅ Presence already marked. Skipping...")
+                send_discord_message(message="✅ Presence already marked.")
+                return
+            else:
+                print(f"⚠️ Skipping step {idx + 1} due to failure.")
+                send_discord_message(message=f"⚠️ Presence could not be marked. {str(e)}")
+
+
+if __name__ == "__main__":
+    setup_ucstudent_page()
+
+    mark_presence()
+
+    driver.save_screenshot("screenshot.png")
+    send_discord_message(message="📸 Screenshot of session", file="screenshot.png")
+    driver.quit()
